@@ -22,17 +22,26 @@ day_subset<-c("0", "3")
 treatment_gp<- c("2 µg ID93 + 5 µg GLA-SE (2 Vaccine Injections)", 
                  "2 µg ID93 + 5 µg GLA-SE (3 Vaccine Injections)")
 
+
+
+
 analysis_type=c("limaa_voom","limma_voom_duplicate_correlation","dream")
 boolen<-c(TRUE,FALSE,FALSE)
 final_analyis_type<-analysis_type[which(unlist(boolen)==TRUE)]
 
 
 
+inputs <- input_argument_list %>% 
+  
+  .[c("data_file","sample_file","treatment_file","treatment_group_1",
+      "treatment_group_2","day_subset_1","day_subset_2",
+      "final_analysis_type")]
+
+
+
 input_argument_list<-c(data_file,
                        sample_meta_data,
-                       treatment_file,treatment_gp,day_subset,
-
-                                              final_analyis_type)
+                       treatment_file,treatment_gp,day_subset,final_analyis_type)
 
 names(input_argument_list) <- c("data_file","sample_file","treatment_file",
                                 "treatment_group_1","treatment_group_2",
@@ -42,7 +51,27 @@ names(input_argument_list) <- c("data_file","sample_file","treatment_file",
 
 
 
+# Create directories for results. 
+write_output_directory_name<-function(input_argument_list)
+{
+  output_analysis_dir =input_argument_list %>% 
+    .[c("final_analysis_type","day_subset_2", "day_subset_1")] %>%
+    stringr::str_c(.,collapse = "_")
+  
+  
 
+  write_results_dir = map(output_analysis_dir, 
+                          dir.create,
+                          recursive = TRUE, 
+                          showWarnings = TRUE)
+}
+
+
+
+
+
+
+# Create filenames for CSV for results.
 write_output_file_name <- function(input_argument_list)
 {
   filename<-c()
@@ -75,7 +104,7 @@ data_filtering <- function(count_matrix)
   return(d0)
 }
 
-data_normalization <- function(d0)
+data_normalization_edgeR <- function(d0)
 {
   # creating a DGE object
   d0 <- DGEList(d0)
@@ -175,7 +204,7 @@ fitting_Edge_R_data<- function(input_argument_list)
   
   ty<-data_preprocessing(input_argument_list)
   data1<-data_filtering(ty$final_count_matrix)
-  d_ss<-data_normalization(data1)
+  d_ss<-data_normalization_edgeR(data1)
   day_s=as.character(ty$subset_meta_data$day)
   meta_data<-ty$subset_meta_data
   pub_id<-as.character(ty$subset_meta_data$pubid)
